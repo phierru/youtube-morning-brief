@@ -56,3 +56,7 @@ Keep `yt-dlp` fresh (YouTube changes break old versions):
 ```sh
 ~/Projects/YouTubeMorningBrief/.venv/bin/pip install -U yt-dlp
 ```
+
+---
+
+☕ Buy me a coffee: https://buymeacoffee.com/phierru

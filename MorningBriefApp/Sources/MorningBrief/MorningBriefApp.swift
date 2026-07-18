@@ -8,11 +8,11 @@ struct MorningBriefApp: App {
     var body: some Scene {
         Window("Morning Brief", id: "main") {
             ContentView()
-                .frame(minWidth: 640, minHeight: 420)
+                .frame(minWidth: 640, minHeight: 480)
                 .environmentObject(agent)
                 .environmentObject(runner)
         }
-        .defaultSize(width: 720, height: 520)
+        .defaultSize(width: 720, height: 560)
 
         MenuBarExtra("Morning Brief", systemImage: "sunrise.fill") {
             MenuBarView()
