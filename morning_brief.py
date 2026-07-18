@@ -10,6 +10,7 @@ Run daily by a LaunchAgent (com.francescolardieri.youtube-morning-brief).
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -24,6 +25,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SCRIPT_DIR / "config.json"
 STATE_PATH = SCRIPT_DIR / "state.json"
+LOCK_PATH = SCRIPT_DIR / "run.lock"
 YTDLP = SCRIPT_DIR / ".venv" / "bin" / "yt-dlp"
 CLAUDE = shutil.which("claude") or "/opt/homebrew/bin/claude"
 
@@ -87,6 +89,32 @@ Keep it tight and skimmable.
 
 def log(msg):
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
+
+def acquire_lock():
+    """Single-instance guard: the lockfile holds the running PID so external
+    tools (the Mac app) can display run-in-progress state."""
+    if LOCK_PATH.exists():
+        try:
+            pid = int(LOCK_PATH.read_text().strip())
+        except ValueError:
+            pid = None
+        if pid and pid_alive(pid):
+            log(f"another run is in progress (pid {pid}) — exiting")
+            sys.exit(0)
+        log("stale lock found — clearing")
+        LOCK_PATH.unlink(missing_ok=True)
+    LOCK_PATH.write_text(str(os.getpid()))
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        pass
+    return True
 
 
 def load_json(path, default):
@@ -255,6 +283,7 @@ def main():
         log("FATAL: cannot read config.json")
         sys.exit(1)
 
+    acquire_lock()
     state = load_json(STATE_PATH, {"seen": {}})
     now = datetime.now(timezone.utc)
     lookback = args.lookback or cfg["lookback_hours"]
@@ -325,4 +354,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        if LOCK_PATH.exists() and LOCK_PATH.read_text().strip() == str(os.getpid()):
+            LOCK_PATH.unlink(missing_ok=True)
