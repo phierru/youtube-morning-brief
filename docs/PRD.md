@@ -19,8 +19,7 @@ The existing pipeline (Python, this repo) works end-to-end:
 - **Summaries** — `claude` CLI (Sonnet), one call per video + one digest call.
 - **Delivery** — daily note per subject in
   `<vault>/Claude/YouTube Briefs/<Subject>/`.
-- **Scheduling** — LaunchAgent `com.francescolardieri.youtube-morning-brief`,
-  daily 07:00.
+- **Scheduling** — LaunchAgent `com.morningbrief.daily`, daily 07:00.
 - Robustness: dedup via `state.json`, shorts skipped, live/caption-less videos
   deferred, network + Claude retries.
 

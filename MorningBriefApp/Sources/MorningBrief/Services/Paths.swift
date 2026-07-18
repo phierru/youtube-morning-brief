@@ -2,14 +2,23 @@ import Foundation
 
 enum Paths {
     static let home = FileManager.default.homeDirectoryForCurrentUser
-    static let projectDir = home.appendingPathComponent("Projects/YouTubeMorningBrief")
+
+    /// Pipeline checkout location. Defaults to ~/Projects/YouTubeMorningBrief;
+    /// override with: defaults write com.francescolardieri.morningbrief projectDir /path/to/checkout
+    static let projectDir: URL = {
+        if let custom = UserDefaults.standard.string(forKey: "projectDir") {
+            return URL(fileURLWithPath: (custom as NSString).expandingTildeInPath)
+        }
+        return home.appendingPathComponent("Projects/YouTubeMorningBrief")
+    }()
+
     static let venvPython = projectDir.appendingPathComponent(".venv/bin/python")
     static let script = projectDir.appendingPathComponent("morning_brief.py")
     static let configFile = projectDir.appendingPathComponent("config.json")
     static let logFile = projectDir.appendingPathComponent("logs/brief.log")
     static let lockFile = projectDir.appendingPathComponent("run.lock")
 
-    static let agentLabel = "com.francescolardieri.youtube-morning-brief"
+    static let agentLabel = "com.morningbrief.daily"
     static let agentPlist = home.appendingPathComponent(
         "Library/LaunchAgents/\(agentLabel).plist")
 }

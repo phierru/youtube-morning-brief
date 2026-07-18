@@ -1,61 +1,114 @@
-# YouTube Morning Brief
+# Morning Brief
 
-Every morning at 07:00 this pipeline checks YouTube channels for new videos,
-pulls their transcripts, summarizes each with Claude, and writes one markdown
-report **per subject** into the Obsidian vault at
-`Claude/YouTube Briefs/<Subject>/YYYY-MM-DD <Subject> Brief.md`.
+Wake up to a daily markdown briefing of the YouTube channels you actually care
+about — summaries, key takeaways, and product links, without watching hours of
+video.
 
-Subjects (each with its own channel list) are defined in `config.json` —
-currently **AI & Tech** and **Geopolitics**.
+Every morning, Morning Brief checks your chosen channels for new videos, pulls
+their transcripts, has [Claude](https://claude.com/claude-code) summarize each
+one, and writes one note per **subject** (e.g. *AI & Tech*, *Geopolitics*) into
+a markdown folder of your choice — an Obsidian vault works beautifully. Each
+note opens with a cross-video digest (top themes + at-a-glance list), followed
+by per-video sections: summary, key takeaways, and the products/sources
+mentioned, with links back to each video.
+
+A native macOS menu bar app (SwiftUI) manages the whole thing: enable/disable
+the schedule, change the run time, trigger manual runs with live output.
 
 ## How it works
 
-1. **New-video detection** — each channel's public RSS feed
-   (`youtube.com/feeds/videos.xml?channel_id=…`), no API key needed.
-2. **Transcripts** — `yt-dlp` downloads English (auto-)captions; VTT is
-   flattened to plain text.
-3. **Summaries** — the `claude` CLI produces per-video summary, key takeaways,
-   and products/tools mentioned (links taken from the video description).
-4. **Report** — one note per subject per day in the vault, opening with a
-   **Digest** (top themes across all videos + at-a-glance list, generated when
-   a brief has 2+ videos), followed by the full per-video sections. Shorts
-   (< 2 min) are skipped. Live/upcoming streams and fresh uploads whose
-   captions aren't ready yet are deferred to the next run (after
-   `transcript_defer_hours` without captions, summarized from the description
-   instead). Videos already reported are tracked in `state.json` (pruned
-   after 30 days).
+1. **Detection** — each channel's public RSS feed
+   (`youtube.com/feeds/videos.xml?channel_id=…`). No YouTube API key needed.
+2. **Transcripts** — [yt-dlp](https://github.com/yt-dlp/yt-dlp) downloads the
+   (auto-)captions; no video download.
+3. **Summaries** — the `claude` CLI writes per-video sections and the daily
+   digest.
+4. **Delivery** — one markdown note per subject per day in
+   `<vault_path>/<report_dir>/<Subject>/`.
+5. **Scheduling** — a macOS LaunchAgent runs the pipeline daily; if the Mac is
+   asleep at the scheduled time, it runs on wake.
 
-## Files
+Robustness: seen-video state prevents duplicates; Shorts (< 2 min) are
+skipped; livestreams and just-published videos without captions are deferred
+to the next run; network and Claude calls retry; a lockfile prevents
+overlapping runs.
 
-- `morning_brief.py` — the whole pipeline
-- `config.json` — channels, vault path, lookback window, model
-- `state.json` — seen-video state (auto-managed)
-- `logs/brief.log` — run log
-- LaunchAgent: `~/Library/LaunchAgents/com.francescolardieri.youtube-morning-brief.plist`
+## Requirements
 
-## Common operations
+- macOS 14+
+- Python 3.10+
+- [Claude Code](https://claude.com/claude-code) CLI (`claude`), authenticated
+- Xcode toolchain (only if you want to build the management app)
 
-Add/remove a channel or subject: edit `config.json` (subjects → channels).
-Get a channel ID from its page source (`"externalId":"UC…"`) or ask Claude.
-
-Run manually:
+## Setup
 
 ```sh
-~/Projects/YouTubeMorningBrief/.venv/bin/python ~/Projects/YouTubeMorningBrief/morning_brief.py
+git clone https://github.com/phierru/youtube-morning-brief.git
+cd youtube-morning-brief
+
+# 1. Python environment
+python3 -m venv .venv
+.venv/bin/pip install yt-dlp
+
+# 2. Configuration
+cp config.example.json config.json
+#    edit config.json: your subjects/channels and the output folder
+
+# 3. Try it
+.venv/bin/python morning_brief.py --lookback 48
+
+# 4. Schedule it (daily at 07:00, or pass e.g. `8 30` for 08:30)
+./install_agent.sh 7 0
 ```
 
-Change schedule: edit the plist's `StartCalendarInterval`, then
+To find a channel's ID: open the channel page, view source, and search for
+`externalId` — or paste the channel URL into the Mac app, which resolves it
+for you.
+
+### config.json
+
+| Key | Meaning |
+|---|---|
+| `subjects` | list of briefs; each has a `name` and its `channels` (name + channel ID) |
+| `vault_path` | absolute path to your markdown folder / Obsidian vault |
+| `report_dir` | subfolder for the briefs, one sub-subfolder per subject |
+| `lookback_hours` | how far back each run looks (dedup makes overlaps safe) |
+| `min_duration_seconds` | videos shorter than this are skipped (Shorts filter) |
+| `transcript_defer_hours` | wait this long for captions before falling back to description-only |
+| `max_transcript_chars` | transcript truncation before summarization |
+| `claude_model` | model passed to `claude -p` |
+
+## The Mac app
+
+<!-- screenshot: docs/screenshot.png -->
 
 ```sh
-launchctl bootout gui/$(id -u)/com.francescolardieri.youtube-morning-brief
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.francescolardieri.youtube-morning-brief.plist
+MorningBriefApp/build.sh   # builds and installs "Morning Brief.app" to /Applications
 ```
 
-Keep `yt-dlp` fresh (YouTube changes break old versions):
+The app is a thin frontend over the same files the pipeline uses — everything
+it does can also be done by hand:
+
+- **Enable/disable** the daily schedule (drives `launchctl`)
+- **Change the run time** (rewrites the LaunchAgent plist and reloads it)
+- **Run Now** with an optional look-back override, streaming live output
+- Status: next run, last run outcome, run-in-progress detection
+
+If your checkout isn't at `~/Projects/YouTubeMorningBrief`:
 
 ```sh
-~/Projects/YouTubeMorningBrief/.venv/bin/pip install -U yt-dlp
+defaults write com.francescolardieri.morningbrief projectDir /path/to/checkout
 ```
+
+## Development
+
+See [docs/PRD.md](docs/PRD.md) for the product requirements and the
+[issue tracker](https://github.com/phierru/youtube-morning-brief/issues) for
+the roadmap (subjects/channels management and settings UI are in progress).
+
+## License
+
+[MIT](LICENSE)
 
 ---
 

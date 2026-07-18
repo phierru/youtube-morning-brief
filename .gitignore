@@ -1,5 +1,6 @@
 .venv/
 logs/
+config.json
 state.json
 run.lock
 __pycache__/

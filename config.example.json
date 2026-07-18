@@ -1,0 +1,18 @@
+{
+  "subjects": [
+    {
+      "name": "AI & Tech",
+      "channels": [
+        { "name": "Two Minute Papers", "id": "UCbfYPyITQ-7l4upoX8nvctg" },
+        { "name": "Matt Wolfe", "id": "UChpleBmo18P08aKCIgti38g" }
+      ]
+    }
+  ],
+  "vault_path": "/Users/YOU/path/to/your/markdown/folder",
+  "report_dir": "YouTube Briefs",
+  "lookback_hours": 48,
+  "min_duration_seconds": 120,
+  "transcript_defer_hours": 24,
+  "max_transcript_chars": 60000,
+  "claude_model": "sonnet"
+}
