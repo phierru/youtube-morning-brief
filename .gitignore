@@ -5,3 +5,4 @@ run.lock
 __pycache__/
 .DS_Store
 MorningBriefApp/.build/
+MorningBriefApp/build/
