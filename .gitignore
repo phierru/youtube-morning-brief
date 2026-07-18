@@ -1,0 +1,6 @@
+.venv/
+logs/
+state.json
+__pycache__/
+.DS_Store
+MorningBriefApp/.build/
