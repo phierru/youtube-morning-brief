@@ -55,6 +55,24 @@ final class ConfigStore: ObservableObject {
         }
     }
 
+    func readSettings() -> PipelineSettings {
+        PipelineSettings(
+            lookbackHours: raw["lookback_hours"] as? Int ?? 48,
+            minDurationSeconds: raw["min_duration_seconds"] as? Int ?? 120,
+            transcriptDeferHours: raw["transcript_defer_hours"] as? Int ?? 24,
+            maxTranscriptChars: raw["max_transcript_chars"] as? Int ?? 60000,
+            claudeModel: raw["claude_model"] as? String ?? "sonnet")
+    }
+
+    func saveSettings(_ s: PipelineSettings) {
+        raw["lookback_hours"] = s.lookbackHours
+        raw["min_duration_seconds"] = s.minDurationSeconds
+        raw["transcript_defer_hours"] = s.transcriptDeferHours
+        raw["max_transcript_chars"] = s.maxTranscriptChars
+        raw["claude_model"] = s.claudeModel
+        save()
+    }
+
     @discardableResult
     func addSubject(named name: String) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespaces)

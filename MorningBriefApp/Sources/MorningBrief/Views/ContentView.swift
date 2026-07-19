@@ -2,6 +2,8 @@ import SwiftUI
 
 enum SidebarItem: Hashable {
     case dashboard
+    case log
+    case settings
     case subject(String)
 }
 
@@ -17,6 +19,10 @@ struct ContentView: View {
                 List(selection: $selection) {
                     Label("Dashboard", systemImage: "gauge.medium")
                         .tag(SidebarItem.dashboard)
+                    Label("Log", systemImage: "text.alignleft")
+                        .tag(SidebarItem.log)
+                    Label("Settings", systemImage: "gearshape")
+                        .tag(SidebarItem.settings)
                     Section("Subjects") {
                         ForEach(config.subjects) { s in
                             Label(s.name, systemImage: "folder")
@@ -39,6 +45,10 @@ struct ContentView: View {
                 switch selection {
                 case .subject(let id):
                     SubjectDetailView(subjectID: id)
+                case .log:
+                    LogView()
+                case .settings:
+                    SettingsView()
                 default:
                     DashboardView()
                 }

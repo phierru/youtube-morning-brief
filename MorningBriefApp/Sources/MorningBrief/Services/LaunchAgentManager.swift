@@ -9,6 +9,15 @@ final class LaunchAgentManager: ObservableObject {
 
     private var domain: String { "gui/\(getuid())" }
     private var serviceTarget: String { "\(domain)/\(Paths.agentLabel)" }
+    private var resyncTimer: Timer?
+
+    init() {
+        refresh()
+        // keep state honest even when no window is observing (menu bar icon)
+        resyncTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+    }
 
     func refresh() {
         enabled = Shell.run("/bin/launchctl", ["print", serviceTarget]).status == 0

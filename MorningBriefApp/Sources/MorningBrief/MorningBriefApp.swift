@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct MorningBriefApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var agent = LaunchAgentManager()
     @StateObject private var runner = PipelineRunner()
     @StateObject private var config = ConfigStore()
@@ -13,13 +14,27 @@ struct MorningBriefApp: App {
                 .environmentObject(agent)
                 .environmentObject(runner)
                 .environmentObject(config)
+                .background(MenuBarBridge(delegate: delegate,
+                                          agent: agent, runner: runner))
         }
-        .defaultSize(width: 720, height: 560)
+        .defaultSize(width: 860, height: 560)
+    }
+}
 
-        MenuBarExtra("Morning Brief", systemImage: "sunrise.fill") {
-            MenuBarView()
-                .environmentObject(agent)
-                .environmentObject(runner)
-        }
+/// Invisible helper that hands the SwiftUI openWindow action and the shared
+/// state objects to the AppKit delegate exactly once.
+private struct MenuBarBridge: View {
+    let delegate: AppDelegate
+    let agent: LaunchAgentManager
+    let runner: PipelineRunner
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Color.clear
+            .onAppear {
+                delegate.attach(agent: agent, runner: runner) {
+                    openWindow(id: "main")
+                }
+            }
     }
 }

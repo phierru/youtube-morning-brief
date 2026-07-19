@@ -16,6 +16,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
 cp .build/release/MorningBrief "$STAGE/Contents/MacOS/"
 cp Info.plist "$STAGE/Contents/"
+[[ -f AppIcon.icns ]] && cp AppIcon.icns "$STAGE/Contents/Resources/"
 codesign --force -s - "$STAGE"
 
 rm -rf "/Applications/$APP"
