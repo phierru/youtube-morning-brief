@@ -80,7 +80,7 @@ for you.
 
 ## The Mac app
 
-<!-- screenshot: docs/screenshot.png -->
+![Morning Brief app](docs/screenshot.png)
 
 ```sh
 MorningBriefApp/build.sh   # builds and installs "Morning Brief.app" to /Applications
