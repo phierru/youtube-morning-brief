@@ -102,9 +102,11 @@ defaults write com.francescolardieri.morningbrief projectDir /path/to/checkout
 
 ## Development
 
-See [docs/PRD.md](docs/PRD.md) for the product requirements and the
-[issue tracker](https://github.com/phierru/youtube-morning-brief/issues) for
-the roadmap (subjects/channels management and settings UI are in progress).
+See [docs/PRD.md](docs/PRD.md) for the product requirements,
+[docs/ROADMAP.md](docs/ROADMAP.md) for what's next (Apple Intelligence
+backend, bring-your-own-LLM), [CHANGELOG.md](CHANGELOG.md) for release
+history, and the
+[issue tracker](https://github.com/phierru/youtube-morning-brief/issues).
 
 ## License
 
