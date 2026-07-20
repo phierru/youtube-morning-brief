@@ -48,7 +48,7 @@ cd youtube-morning-brief
 
 # 1. Python environment
 python3 -m venv .venv
-.venv/bin/pip install yt-dlp
+.venv/bin/pip install -r requirements.txt
 
 # 2. Configuration
 cp config.example.json config.json

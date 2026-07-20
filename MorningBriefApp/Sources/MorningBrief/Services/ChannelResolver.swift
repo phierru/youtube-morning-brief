@@ -50,9 +50,15 @@ enum ChannelResolver {
         return nil
     }
 
+    private static let allowedHosts: Set<String> = [
+        "www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be",
+    ]
+
     private static func scrapeChannelId(from input: String) async throws -> String {
-        let urlString: String
-        if input.hasPrefix("http://") || input.hasPrefix("https://") {
+        var urlString: String
+        if input.hasPrefix("http://") {
+            urlString = "https://" + input.dropFirst("http://".count)
+        } else if input.hasPrefix("https://") {
             urlString = input
         } else if input.contains("youtube.com") {
             urlString = "https://\(input)"
@@ -61,7 +67,9 @@ enum ChannelResolver {
         } else {
             urlString = "https://www.youtube.com/@\(input)"
         }
-        guard let url = URL(string: urlString) else { throw ResolveError.invalidInput }
+        guard let url = URL(string: urlString),
+              let host = url.host, allowedHosts.contains(host)
+        else { throw ResolveError.invalidInput }
 
         let html = try await fetch(url)
         guard let r = html.range(of: #""externalId":"UC[0-9A-Za-z_-]{22}""#,
@@ -93,8 +101,15 @@ enum ChannelResolver {
             forHTTPHeaderField: "User-Agent")
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
-            if let http = response as? HTTPURLResponse, http.statusCode == 404 {
-                throw ResolveError.notFound
+            if let http = response as? HTTPURLResponse {
+                if http.statusCode == 404 { throw ResolveError.notFound }
+                // redirects are followed — re-check we're still on YouTube
+                if let host = http.url?.host, !allowedHosts.contains(host) {
+                    throw ResolveError.notFound
+                }
+            }
+            guard data.count <= 10_000_000 else {
+                throw ResolveError.network("response too large")
             }
             return String(data: data, encoding: .utf8) ?? ""
         } catch let e as ResolveError {

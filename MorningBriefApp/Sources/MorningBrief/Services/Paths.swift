@@ -30,8 +30,12 @@ enum Shell {
         let stderr: String
     }
 
+    /// Runs a process, draining stdout/stderr concurrently (a pipe left
+    /// undrained until exit can deadlock on >64KB of output) and terminating
+    /// the child if it exceeds the timeout.
     @discardableResult
-    static func run(_ launchPath: String, _ args: [String]) -> Result {
+    static func run(_ launchPath: String, _ args: [String],
+                    timeout: TimeInterval = 20) -> Result {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: launchPath)
         p.arguments = args
@@ -43,9 +47,37 @@ enum Shell {
         } catch {
             return Result(status: -1, stdout: "", stderr: "\(error)")
         }
-        p.waitUntilExit()
-        let o = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        let e = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        return Result(status: p.terminationStatus, stdout: o, stderr: e)
+
+        var outData = Data(), errData = Data()
+        let drain = DispatchGroup()
+        drain.enter()
+        DispatchQueue.global().async {
+            outData = out.fileHandleForReading.readDataToEndOfFile()
+            drain.leave()
+        }
+        drain.enter()
+        DispatchQueue.global().async {
+            errData = err.fileHandleForReading.readDataToEndOfFile()
+            drain.leave()
+        }
+
+        let exited = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            p.waitUntilExit()
+            exited.signal()
+        }
+        var timedOut = false
+        if exited.wait(timeout: .now() + timeout) == .timedOut {
+            timedOut = true
+            p.terminate()
+            _ = exited.wait(timeout: .now() + 3)
+        }
+        drain.wait()
+
+        return Result(
+            status: timedOut ? -1 : p.terminationStatus,
+            stdout: String(data: outData, encoding: .utf8) ?? "",
+            stderr: timedOut ? "timed out after \(Int(timeout))s"
+                             : (String(data: errData, encoding: .utf8) ?? ""))
     }
 }

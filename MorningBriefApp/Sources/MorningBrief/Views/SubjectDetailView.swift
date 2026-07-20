@@ -121,7 +121,7 @@ struct SubjectDetailView: View {
             input = ""
             errorText = nil
         } else {
-            errorText = "“\(r.title)” is already in this subject."
+            errorText = config.lastError ?? "“\(r.title)” is already in this subject."
         }
     }
 }

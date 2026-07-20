@@ -32,13 +32,19 @@ struct ContentView: View {
                 }
                 .navigationSplitViewColumnWidth(min: 170, ideal: 190)
                 .safeAreaInset(edge: .bottom) {
-                    Button {
-                        showAddSubject = true
-                    } label: {
-                        Label("Add Subject", systemImage: "plus")
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let err = config.lastError {
+                            Text(err).font(.caption2).foregroundStyle(.red)
+                                .lineLimit(3)
+                        }
+                        Button {
+                            showAddSubject = true
+                        } label: {
+                            Label("Add Subject", systemImage: "plus")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                     .padding(8)
                 }
             } detail: {

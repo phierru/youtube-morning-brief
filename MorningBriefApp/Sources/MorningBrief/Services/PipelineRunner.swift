@@ -33,7 +33,7 @@ final class PipelineRunner: ObservableObject {
         p.arguments = args
         p.currentDirectoryURL = Paths.projectDir
         var env = ProcessInfo.processInfo.environment
-        env["PATH"] = "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
         p.environment = env
 
         let pipe = Pipe()

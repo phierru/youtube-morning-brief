@@ -41,10 +41,11 @@ struct SettingsView: View {
             Section {
                 HStack {
                     Button("Save") {
-                        config.saveSettings(settings)
-                        saved = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            saved = false
+                        if config.saveSettings(settings) {
+                            saved = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                saved = false
+                            }
                         }
                     }
                     .buttonStyle(.borderedProminent)
