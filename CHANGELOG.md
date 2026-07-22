@@ -9,6 +9,23 @@ versioning follows [SemVer](https://semver.org/).
 See [docs/ROADMAP.md](docs/ROADMAP.md) — next up: Apple Intelligence backend
 (v1.1), bring-your-own-LLM (v1.2).
 
+## [1.0.2] - 2026-07-20
+
+Config robustness.
+
+### Added
+- `config.schema.json` (JSON Schema draft-07): editors validate and
+  autocomplete `config.json` via its `"$schema"` reference.
+- The pipeline validates config structure on startup and exits with
+  actionable `FATAL: config.json invalid: …` lines instead of crashing
+  mid-run on wrong-shape values.
+
+### Fixed
+- The app now reloads `config.json` when it changes on disk (hand-edits
+  while the app is open are no longer invisible or overwritten).
+- The dashboard's last-run status surfaces FATAL outcomes instead of
+  showing the previous day's success.
+
 ## [1.0.1] - 2026-07-20
 
 Hardening release addressing all findings of an automated code review.

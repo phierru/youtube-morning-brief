@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/phierru/youtube-morning-brief/main/config.schema.json",
+  "title": "Morning Brief configuration",
+  "type": "object",
+  "required": [
+    "subjects",
+    "vault_path",
+    "report_dir",
+    "lookback_hours",
+    "min_duration_seconds",
+    "max_transcript_chars"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "subjects": {
+      "description": "One entry per daily brief; each has its own channel list.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "channels"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Display name of the brief. Also used (sanitized) as the report folder name.",
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^/\\\\:\\n\\r\\t]*[^/\\\\:\\n\\r\\t .]$"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "id"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "description": "Channel display name.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "id": {
+                  "description": "YouTube channel ID (starts with UC). Find it in the channel page source as externalId, or paste the channel URL into the Morning Brief app.",
+                  "type": "string",
+                  "pattern": "^UC[0-9A-Za-z_-]{22}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "vault_path": {
+      "description": "Absolute path to your markdown folder / Obsidian vault.",
+      "type": "string",
+      "minLength": 1
+    },
+    "report_dir": {
+      "description": "Subfolder inside vault_path where briefs are written (one sub-subfolder per subject).",
+      "type": "string",
+      "minLength": 1
+    },
+    "lookback_hours": {
+      "description": "How far back each run searches for new videos. Dedup makes overlapping windows safe.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 336
+    },
+    "min_duration_seconds": {
+      "description": "Videos shorter than this are skipped (filters out Shorts).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600
+    },
+    "transcript_defer_hours": {
+      "description": "How long to wait for captions before summarizing from the description instead.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 168,
+      "default": 24
+    },
+    "max_transcript_chars": {
+      "description": "Transcripts are truncated to this length before summarization.",
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 500000
+    },
+    "claude_model": {
+      "description": "Model passed to `claude -p --model` (e.g. sonnet, opus, haiku).",
+      "type": "string",
+      "minLength": 1,
+      "default": "sonnet"
+    }
+  }
+}

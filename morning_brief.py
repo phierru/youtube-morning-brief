@@ -136,6 +136,49 @@ def subject_slug(name):
     return slug or "untitled"
 
 
+def validate_config(cfg):
+    """Structural validation mirroring config.schema.json.
+    Returns a list of human-readable problems; empty when valid."""
+    if not isinstance(cfg, dict):
+        return ["config root must be a JSON object"]
+    errors = []
+    subs = cfg.get("subjects")
+    if not isinstance(subs, list):
+        errors.append('"subjects" must be a list')
+    else:
+        for i, s in enumerate(subs):
+            if (not isinstance(s, dict) or not isinstance(s.get("name"), str)
+                    or not s["name"].strip()):
+                errors.append(f'subjects[{i}] needs a non-empty string "name"')
+                continue
+            chans = s.get("channels")
+            if not isinstance(chans, list):
+                errors.append(f'subject "{s["name"]}": "channels" must be a list')
+                continue
+            for j, c in enumerate(chans):
+                if (not isinstance(c, dict) or not isinstance(c.get("name"), str)
+                        or not isinstance(c.get("id"), str)
+                        or not re.fullmatch(r"UC[0-9A-Za-z_-]{22}", c["id"])):
+                    errors.append(f'subject "{s["name"]}" channel #{j + 1}: '
+                                  'needs "name" and a valid "id" (UC…, 24 chars)')
+    for key in ("vault_path", "report_dir"):
+        if not isinstance(cfg.get(key), str) or not cfg[key]:
+            errors.append(f'"{key}" must be a non-empty string')
+    bounds = (("lookback_hours", 1, 336, False),
+              ("min_duration_seconds", 0, 3600, False),
+              ("max_transcript_chars", 1000, 500_000, False),
+              ("transcript_defer_hours", 0, 168, True))
+    for key, lo, hi, optional in bounds:
+        v = cfg.get(key)
+        if v is None and optional:
+            continue
+        if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
+            errors.append(f'"{key}" must be an integer between {lo} and {hi}')
+    if not isinstance(cfg.get("claude_model", "sonnet"), str):
+        errors.append('"claude_model" must be a string')
+    return errors
+
+
 def load_json(path, default):
     try:
         return json.loads(path.read_text())
@@ -403,7 +446,12 @@ def main():
 
     cfg = load_json(CONFIG_PATH, None)
     if cfg is None:
-        log("FATAL: cannot read config.json")
+        log("FATAL: cannot read config.json (missing or not valid JSON)")
+        sys.exit(1)
+    problems = validate_config(cfg)
+    if problems:
+        for p in problems:
+            log(f"FATAL: config.json invalid: {p}")
         sys.exit(1)
 
     acquire_lock()

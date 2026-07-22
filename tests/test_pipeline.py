@@ -58,6 +58,52 @@ class AppendIdempotency(unittest.TestCase):
         self.assertEqual([s["id"] for s in kept], ["zzz999ZZZ99"])
 
 
+def _valid_cfg():
+    return {
+        "subjects": [{"name": "Tech", "channels": [
+            {"name": "Chan", "id": "UC" + "a" * 22}]}],
+        "vault_path": "/tmp/vault",
+        "report_dir": "Briefs",
+        "lookback_hours": 48,
+        "min_duration_seconds": 120,
+        "max_transcript_chars": 60000,
+    }
+
+
+class ValidateConfig(unittest.TestCase):
+    def test_valid_config_passes(self):
+        self.assertEqual(mb.validate_config(_valid_cfg()), [])
+
+    def test_extra_keys_allowed(self):
+        cfg = _valid_cfg()
+        cfg["$schema"] = "./config.schema.json"
+        cfg["future_key"] = {"anything": True}
+        self.assertEqual(mb.validate_config(cfg), [])
+
+    def test_subjects_wrong_type(self):
+        cfg = _valid_cfg()
+        cfg["subjects"] = "oops"
+        self.assertTrue(any("subjects" in e for e in mb.validate_config(cfg)))
+
+    def test_bad_channel_id(self):
+        cfg = _valid_cfg()
+        cfg["subjects"][0]["channels"][0]["id"] = "not-a-channel-id"
+        self.assertTrue(any("valid \"id\"" in e for e in mb.validate_config(cfg)))
+
+    def test_missing_vault_path(self):
+        cfg = _valid_cfg()
+        del cfg["vault_path"]
+        self.assertTrue(any("vault_path" in e for e in mb.validate_config(cfg)))
+
+    def test_bool_is_not_an_int(self):
+        cfg = _valid_cfg()
+        cfg["lookback_hours"] = True
+        self.assertTrue(any("lookback_hours" in e for e in mb.validate_config(cfg)))
+
+    def test_non_dict_root(self):
+        self.assertTrue(mb.validate_config(["not", "a", "dict"]))
+
+
 class ClaudeSandbox(unittest.TestCase):
     def test_hardening_flags_present(self):
         flags = mb.CLAUDE_SANDBOX_FLAGS

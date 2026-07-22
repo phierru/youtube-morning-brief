@@ -23,10 +23,30 @@ final class ConfigStore: ObservableObject {
     /// Saves are refused while false, so a bad load can never be
     /// silently overwritten with an empty config.
     private var configValid = false
+    /// Modification date of the file as last loaded/saved — used to pick up
+    /// hand-edits made while the app is open.
+    private var loadedMTime: Date?
+    private var reloadTimer: Timer?
 
-    init() { load() }
+    init() {
+        load()
+        reloadTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.reloadIfChangedOnDisk() }
+        }
+    }
+
+    private func fileMTime() -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: Paths.configFile.path))?[
+            .modificationDate] as? Date
+    }
+
+    func reloadIfChangedOnDisk() {
+        guard let m = fileMTime(), m != loadedMTime else { return }
+        load()
+    }
 
     func load() {
+        loadedMTime = fileMTime()
         configValid = false
         do {
             let data = try Data(contentsOf: Paths.configFile)
@@ -69,6 +89,7 @@ final class ConfigStore: ObservableObject {
             let data = try JSONSerialization.data(
                 withJSONObject: raw, options: [.prettyPrinted, .sortedKeys])
             try data.write(to: Paths.configFile, options: .atomic)
+            loadedMTime = fileMTime()  // our own write is not a hand-edit
             lastError = nil
             return true
         } catch {

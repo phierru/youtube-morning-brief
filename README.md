@@ -67,6 +67,11 @@ for you.
 
 ### config.json
 
+A JSON Schema ships as [`config.schema.json`](config.schema.json) — keep the
+`"$schema": "./config.schema.json"` line in your config and editors like
+VS Code will validate and autocomplete it. The pipeline also validates the
+structure on every run and refuses to start with a clear error if it's broken.
+
 | Key | Meaning |
 |---|---|
 | `subjects` | list of briefs; each has a `name` and its `channels` (name + channel ID) |

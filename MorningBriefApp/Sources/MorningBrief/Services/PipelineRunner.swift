@@ -80,6 +80,7 @@ final class PipelineRunner: ObservableObject {
         let lines = text.split(separator: "\n").suffix(120)
         let outcomes = lines.filter {
             $0.contains("report written:") || $0.contains("no new videos")
+                || $0.contains("FATAL")
         }
         guard !outcomes.isEmpty else { return nil }
         return outcomes.suffix(2).map { line in
