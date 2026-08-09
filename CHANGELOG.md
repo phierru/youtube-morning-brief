@@ -9,6 +9,29 @@ versioning follows [SemVer](https://semver.org/).
 See [docs/ROADMAP.md](docs/ROADMAP.md) — next up: Apple Intelligence backend
 (v1.1), bring-your-own-LLM (v1.2).
 
+## [1.0.3] - 2026-08-09
+
+Control over a run in progress, and logs that say what actually happened.
+
+### Added
+- A **Stop** button on the dashboard interrupts the run in progress —
+  both the app's own run and a scheduled one, reached via the PID in
+  `run.lock` — escalating to `SIGKILL` if `SIGTERM` doesn't take.
+- The pipeline handles `SIGTERM`/`SIGINT`, killing its in-flight
+  `claude`/`yt-dlp` child and releasing the lock on the way out. An
+  interrupted subject writes nothing and is simply redone on the next
+  run, since videos are only marked seen once summarized.
+
+### Fixed
+- Manual runs are now recorded in `logs/brief.log`. Their output went to
+  an in-memory buffer only, so it vanished when the window closed, and
+  the dashboard's last-run status — which tails that log — never
+  reflected them.
+- Claude CLI failures no longer log as a bare `no output`. The CLI
+  reports errors on stdout and leaves stderr empty, and only stderr was
+  captured, so the real message (usage limits, auth, model errors) was
+  read and discarded.
+
 ## [1.0.2] - 2026-07-20
 
 Config robustness.
