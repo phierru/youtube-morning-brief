@@ -57,6 +57,16 @@ struct DashboardView: View {
                         }
                         .disabled(runner.runInProgress)
 
+                        Button(role: .destructive) {
+                            runner.stop()
+                        } label: {
+                            Label(runner.stopping ? "Stopping…" : "Stop",
+                                  systemImage: "stop.fill")
+                        }
+                        .disabled(!runner.runInProgress || runner.stopping)
+                        .help("Stop the run in progress. Nothing partial is "
+                              + "written; the next run picks up where this left off.")
+
                         TextField("look back (hours, optional)", text: $lookbackText)
                             .textFieldStyle(.roundedBorder)
                             .frame(maxWidth: 200)

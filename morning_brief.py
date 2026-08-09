@@ -14,6 +14,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -127,6 +128,18 @@ def release_lock():
     if _lock_handle is not None:
         LOCK_PATH.unlink(missing_ok=True)  # safe: we hold the flock
         _lock_handle.close()
+
+
+def on_interrupt(signum, _frame):
+    """Stop promptly on SIGTERM/SIGINT (the app's Stop button, or Ctrl-C).
+
+    Raising unwinds through the blocking subprocess.run, which kills the
+    in-flight child (claude/yt-dlp) on its way out, and the finally in
+    __main__ releases the lock. The current subject writes nothing, so the
+    next run simply redoes it — videos are only marked seen once summarized.
+    """
+    log(f"interrupted (signal {signum}) — stopping, no report written")
+    raise SystemExit(130)
 
 
 def subject_slug(name):
@@ -307,7 +320,11 @@ def run_claude(prompt, cfg, attempts=2, wait=60):
             )
             if r.returncode == 0 and r.stdout.strip():
                 return r.stdout.strip()
-            err = r.stderr.strip()[:300]
+            # the CLI reports failures on stdout and leaves stderr empty, so
+            # fall back to it — otherwise usage limits, auth and model errors
+            # all get logged as a bare "no output".
+            err = (r.stderr.strip() or r.stdout.strip()
+                   or f"exit {r.returncode}, no output")[:300]
         except subprocess.TimeoutExpired:
             err = "timeout"
         except OSError as exc:
@@ -453,6 +470,9 @@ def main():
         for p in problems:
             log(f"FATAL: config.json invalid: {p}")
         sys.exit(1)
+
+    signal.signal(signal.SIGTERM, on_interrupt)
+    signal.signal(signal.SIGINT, on_interrupt)
 
     acquire_lock()
     state = load_json(STATE_PATH, {"seen": {}})
