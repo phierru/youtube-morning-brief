@@ -29,7 +29,17 @@ CONFIG_PATH = SCRIPT_DIR / "config.json"
 STATE_PATH = SCRIPT_DIR / "state.json"
 LOCK_PATH = SCRIPT_DIR / "run.lock"
 YTDLP = SCRIPT_DIR / ".venv" / "bin" / "yt-dlp"
-CLAUDE = shutil.which("claude") or "/opt/homebrew/bin/claude"
+# launchd and the app run us with a minimal PATH, so also probe the usual
+# install locations (native installer, Homebrew).
+CLAUDE = shutil.which("claude") or next(
+    (p for p in (
+        os.path.expanduser("~/.local/bin/claude"),
+        os.path.expanduser("~/.claude/local/claude"),
+        "/opt/homebrew/bin/claude",
+        "/usr/local/bin/claude",
+    ) if os.access(p, os.X_OK)),
+    "claude",
+)
 
 # The prompt content below includes untrusted third-party text (titles,
 # descriptions, transcripts). These flags make the CLI non-agentic: no user
