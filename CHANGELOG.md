@@ -9,6 +9,17 @@ versioning follows [SemVer](https://semver.org/).
 See [docs/ROADMAP.md](docs/ROADMAP.md) — next up: Apple Intelligence backend
 (v1.1), bring-your-own-LLM (v1.2).
 
+## [1.0.4] - 2026-10-01
+
+### Fixed
+- The pipeline finds the Claude CLI again after a reinstall via the
+  native installer, which puts it in `~/.local/bin`. The scheduled run
+  and the app both run with a minimal `PATH`, so the lookup fell back
+  to a hardcoded `/opt/homebrew/bin/claude` that no longer existed and
+  every summary failed. The usual install locations are now probed
+  (`~/.local/bin`, `~/.claude/local`, `/opt/homebrew/bin`,
+  `/usr/local/bin`).
+
 ## [1.0.3] - 2026-08-09
 
 Control over a run in progress, and logs that say what actually happened.
